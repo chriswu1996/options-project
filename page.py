@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+
 import model
 import data
 
@@ -29,7 +30,8 @@ st.markdown(
 )
 
 ticker = 'BTC'
-exp = pd.Timestamp.now().floor('D')
+exp = pd.Timestamp.utcnow()
+exp = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')
 options_data = data.get_options_data(ticker, exp)
 options_data['option_type'] = options_data['instrument_name'].str.split('-').str[-1]
 options_data['strike'] = options_data['instrument_name'].str.split('-').str[2].astype(int)
