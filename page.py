@@ -29,7 +29,7 @@ st.markdown(
 )
 
 ticker = 'BTC'
-exp = pd.Timestamp('20250922')
+exp = pd.Timestamp.now().floor('D')
 options_data = data.get_options_data(ticker, exp)
 options_data['option_type'] = options_data['instrument_name'].str.split('-').str[-1]
 options_data['strike'] = options_data['instrument_name'].str.split('-').str[2].astype(int)
