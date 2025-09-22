@@ -36,8 +36,8 @@ st.title("Options (BTC)")
 # Date input
 exp = pd.Timestamp.utcnow()
 exp = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')
-exp = st.date_input("Expiry Date", value=exp)
-st.write(f"Expiry date: **{exp}**")
+exp = pd.Timestamp(st.date_input("Expiry Date", value=exp))
+st.write(f"Expiry date: **{exp.strftime('%Y-%m-%d')}**")
 
 ticker = 'BTC'
 options_data = data.get_options_data(ticker, exp)
