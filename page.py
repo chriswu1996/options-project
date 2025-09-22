@@ -29,9 +29,17 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-ticker = 'BTC'
+st.set_page_config(page_title="Options Chain Viewer", layout="wide")
+
+st.title("Options (BTC)")
+
+# Date input
 exp = pd.Timestamp.utcnow()
 exp = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')
+exp = st.date_input("Expiry Date", value=exp)
+st.write(f"Expiry date: **{exp}**")
+
+ticker = 'BTC'
 options_data = data.get_options_data(ticker, exp)
 options_data['option_type'] = options_data['instrument_name'].str.split('-').str[-1]
 options_data['strike'] = options_data['instrument_name'].str.split('-').str[2].astype(int)
@@ -51,14 +59,6 @@ df = pd.DataFrame({
 fut_px = options_data.iloc[0].underlying_price
 valid_strikes = df[df[("Strike", "")] <= fut_px]
 df[('Strike', '')] = df[('Strike', '')].apply(lambda x: f"{x:,.0f}")
-
-st.set_page_config(page_title="Options Chain Viewer", layout="wide")
-
-st.title("Options (BTC)")
-
-# Date input
-expiry_date = st.date_input("Expiry Date")
-st.write(f"Expiry date: **{expiry_date}**")
 
 for col in [("Calls", "Bid"), ("Calls", "Ask"), ("Puts", "Bid"), ("Puts", "Ask")]:
     df[col] = df[(col[0], 'Mark')] + (0.001 * (1 if col[1] == 'Ask' else -1))
