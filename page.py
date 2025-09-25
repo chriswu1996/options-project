@@ -39,7 +39,7 @@ exp = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')
 exp = pd.Timestamp(st.date_input("Expiry Date", value=exp))
 st.write(f"Expiry date: **{exp.strftime('%Y-%m-%d')}**")
 
-ticker = 'BTC'
+ticker = st.selectbox("Ticker", ['BTC', 'ETH'], index=0)  # SOL, SUI
 options_data = data.get_options_data(ticker, exp)
 options_data['option_type'] = options_data['instrument_name'].str.split('-').str[-1]
 options_data['strike'] = options_data['instrument_name'].str.split('-').str[2].astype(int)
