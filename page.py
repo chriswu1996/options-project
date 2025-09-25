@@ -76,18 +76,6 @@ if not valid_strikes.empty:
     df.loc[fut_px_idx, ('Strike', '')] += f'<br>{futures_text}'
 
 html_table = df.to_html(escape=False, index=False)
-if not valid_strikes.empty:
-    fut_px_idx_with_header = fut_px_idx + 2  # +2 to account for the header rows
-    html_lines = html_table.splitlines()
-    for i in range(len(html_lines)):
-        if i == fut_px_idx_with_header:
-            html_lines[i] = html_lines[i].replace(
-                '<td>', '<td style="border-bottom: 2px solid aqua; font-weight: bold;">'
-            )
-            html_lines[i] = html_lines[i].replace('</tr>',
-                                                  '</tr><td style="border-bottom: 2px solid aqua; font-weight: bold;"></td>')
-
-    html_table = "\n".join(html_lines)
 html_table = html_table.replace(
     '<table border="1" class="dataframe">',
     '<table border="1" class="dataframe" style="width:100%; table-layout:fixed;">'
