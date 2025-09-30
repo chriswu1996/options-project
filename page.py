@@ -1,8 +1,6 @@
-import streamlit as st
-import pandas as pd
-
 import model
-import data
+import pandas as pd
+import streamlit as st
 
 st.markdown(
     """
@@ -31,34 +29,26 @@ st.markdown(
 
 st.set_page_config(page_title="Options Chain Viewer", layout="wide")
 
-st.title("Options (BTC)")
+st.title("Options Demo")
 
-# Date input
+mode_is_intraday = st.toggle("Intraday", value=False)
+mode = 'Intraday' if mode_is_intraday else 'Daily'
+
 exp = pd.Timestamp.utcnow()
-exp = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')
-exp = pd.Timestamp(st.date_input("Expiry Date", value=exp))
-st.write(f"Expiry date: **{exp.strftime('%Y-%m-%d')}**")
+option_date = (exp if exp.hour < 8 else exp + pd.Timedelta(days=1)).floor('D')  # Daily options on Deribit expire every day at 08:00 UTC
+if mode == 'Daily':
+    exp = option_date = pd.Timestamp(st.date_input("Expiry Date", value=option_date), tz='UTC')
+    exp += pd.Timedelta(hours=8)
+    st.write(f"Expiry: **{exp}** UTC")
+else:
+    exp = exp.replace(second=0, microsecond=0) + pd.Timedelta(minutes=1)
+    start = exp + pd.Timedelta(minutes=(-exp.minute % 5))
+    end = exp + pd.Timedelta(minutes=30)
+    options = [start + pd.Timedelta(minutes=5 * i) for i in range(int((end - start).total_seconds() // 300) + 1)]
+    exp = st.selectbox("Expiry (UTC):", options, format_func=lambda d: d.strftime("%I:%M %p"))
 
-ticker = st.selectbox("Ticker", ['BTC', 'ETH'], index=0)  # SOL, SUI
-options_data = data.get_options_data(ticker, exp)
-options_data['option_type'] = options_data['instrument_name'].str.split('-').str[-1]
-options_data['strike'] = options_data['instrument_name'].str.split('-').str[2].astype(int)
-exp_days = model.get_days_to_exp(exp) # TODO: use milliseconds instead
-options_data['mark'] = options_data.apply(lambda x: model.black_scholes(x.underlying_price, x.strike, exp_days/365, 0, x.mark_iv / 100, x.option_type) / x.underlying_price, axis=1)
-
-df = options_data.pivot_table(index='strike', columns='option_type', values=['mark', 'mark_iv', 'underlying_price'], aggfunc='first').reset_index()
-df = pd.DataFrame({
-    ("Calls", "Mark"): df[('mark', 'C')],
-    ("Calls", "Mark_IV"): df[('mark_iv', 'C')],
-    ("Calls", "Underlying_Price"): df[('underlying_price', 'C')],
-    ("Strike", ""): df[('strike', '')],
-    ("Puts", "Mark"): df[('mark', 'P')],
-    ("Puts", "Mark_IV"): df[('mark_iv', 'P')],
-    ("Puts", "Underlying_Price"): df[('underlying_price', 'P')],
-})
-fut_px = options_data.iloc[0].underlying_price
-valid_strikes = df[df[("Strike", "")] <= fut_px]
-df[('Strike', '')] = df[('Strike', '')].apply(lambda x: f"{x:,.0f}")
+ticker = st.selectbox("Ticker", ['BTC', 'ETH'])  # SOL, SUI
+df, fut_px = model.get_options_table(option_date, exp, mode, ticker)
 
 for col in [("Calls", "Bid"), ("Calls", "Ask"), ("Puts", "Bid"), ("Puts", "Ask")]:
     df[col] = df[(col[0], 'Mark')] + (0.001 * (1 if col[1] == 'Ask' else -1))
@@ -70,6 +60,8 @@ for col in [("Calls", "Mark"), ("Puts", "Mark")]:
     df[col] = df.apply(lambda x: f"{x[col]:.4f}<br><span style='font-size:12px;color:gray;'>{x[(col[0], 'Mark_IV')]:,.2f}%</span>", axis=1)
 df = df[[("Calls", "Bid"), ("Calls", "Mark"), ("Calls", "Ask"), ("Strike", ""), ("Puts", "Bid"), ("Puts", "Mark"), ("Puts", "Ask")]]
 
+valid_strikes = df[df[("Strike", "")] <= fut_px]
+df[('Strike', '')] = df[('Strike', '')].apply(lambda x: f"{x:,.0f}")
 if not valid_strikes.empty:
     fut_px_idx = valid_strikes.iloc[-1].name
     futures_text = f"<span style='color:aqua; font-weight:bold;'>Futures: {fut_px:,.0f}</span>"
