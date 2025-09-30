@@ -22,5 +22,5 @@ def get_options_data(ticker, exp):
     # TODO: Calculate synthetic futures price ourselves
     ticker = ticker.upper()
     res = requests.get(f"{DERIBIT_API_BASE}/public/get_book_summary_by_currency", params={'currency': ticker, 'kind': 'option'}, timeout=10).json()['result']
-    res = pd.DataFrame([x for x in res if exp.strftime('%d%b%y').upper() in x['instrument_name']])[['instrument_name', 'mark_iv', 'underlying_price']]  # mark_price, timestamp
+    res = pd.DataFrame([x for x in res if exp.strftime('%-d%b%y').upper() in x['instrument_name']])[['instrument_name', 'mark_iv', 'underlying_price']]  # mark_price, timestamp
     return res
